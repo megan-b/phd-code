@@ -83,12 +83,16 @@ config = {'scrollZoom': True}
 line_colour = "rgb(217,217,217)"
 bg_colour = "white"
 line_width = 0.5
+default_width = 6.7
+default_height = 0.5*default_width
+
+plot_width = 0.8*default_width
+subplot_width = 0.5*default_width # to fit two side-by-side
 
 default_layout = dict(yaxis=dict(
-#        autorange=True,
         showgrid=True,
-        zeroline=True,
         mirror=True,
+        zeroline=True,
         showline=True, 
         ticks="outside",
         tickcolor=line_colour,
@@ -103,44 +107,6 @@ default_layout = dict(yaxis=dict(
         tickformat=",",
     ),
         xaxis=dict(
-            zeroline=True,
-            mirror=True,
-            showline=True, 
-            ticks="outside",
-            tickcolor=line_colour,
-            ticklen=5,
-            linewidth=line_width, 
-            linecolor=line_colour,
-            zerolinecolor=line_colour,
-            zerolinewidth=line_width,
-            separatethousands=True,
-            tickformat=",",
-    ),
-    paper_bgcolor=bg_colour,
-    plot_bgcolor=bg_colour,
-    font=dict(
-        size=14,
-        color="black"
-    )
-)
-
-default_layout_box = dict(yaxis=dict(
-        showgrid=True,
-        zeroline=True,
-        mirror=True,
-        ticks="outside",
-        tickcolor=line_colour,
-        ticklen=5,
-        linewidth=line_width, 
-        linecolor=line_colour,
-        gridcolor=line_colour,
-        gridwidth=line_width,
-        zerolinecolor=line_colour,
-        zerolinewidth=line_width,
-        separatethousands=True,
-        tickformat=",",
-    ),
-        xaxis=dict(
             mirror=True,
             linewidth=line_width, 
             linecolor=line_colour,
@@ -150,15 +116,17 @@ default_layout_box = dict(yaxis=dict(
     paper_bgcolor=bg_colour,
     plot_bgcolor=bg_colour,
     font=dict(
-        size=14,
-        color="black"
+        size=32,
+        color="black",
+        family="CMU Serif",
     )
 )
 
-default_layout_box_journal = dict(yaxis=dict(
+default_layout_html = dict(yaxis=dict(
         showgrid=True,
-        zeroline=True,
         mirror=True,
+        zeroline=True,
+        showline=True, 
         ticks="outside",
         tickcolor=line_colour,
         ticklen=5,
@@ -187,46 +155,62 @@ default_layout_box_journal = dict(yaxis=dict(
     )
 )
 
-default_layout_journal = dict(yaxis=dict(
-#        autorange=True,
-        showgrid=True,
-        zeroline=True,
-        mirror=True,
-        showline=True, 
-        ticks="outside",
-        tickcolor=line_colour,
-        ticklen=5,
-        linewidth=line_width, 
-        linecolor=line_colour,
-        gridcolor=line_colour,
-        gridwidth=line_width,
-        zerolinecolor=line_colour,
-        zerolinewidth=line_width,
-        separatethousands=True,
-        tickformat=",",
+default_layout_blank = dict(yaxis=dict(
+        visible=False,
     ),
         xaxis=dict(
-            zeroline=True,
-            mirror=True,
-            showline=True, 
-            ticks="outside",
-            tickcolor=line_colour,
-            ticklen=5,
-            linewidth=line_width, 
-            linecolor=line_colour,
-            zerolinecolor=line_colour,
-            zerolinewidth=line_width,
-            separatethousands=True,
-            tickformat=",",
+            visible=False,
     ),
     paper_bgcolor=bg_colour,
     plot_bgcolor=bg_colour,
-    font=dict(
-        size=16,
-        color="black",
-        family="Arial",
-    )
+    showlegend=False,
 )
+
+#%% EXPORT FUNCTIONS
+
+def export_plot(filename, width, height):
+    fig.update_layout(default_layout_html)
+    fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
+
+    fig.update_layout(default_layout)
+    fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=width*300, height=height*300, scale=1)
+
+
+    trace_types = [trace.type for trace in fig.data]
+    
+    if trace_types[0] == "histogram2d":
+       fig.update_traces(texttemplate=None)
+    if (trace_types[0] =='box') or (trace_types[0]=='bar'):
+        fig.layout.shapes = [] # this removes the vertical lines
+
+    fig.update_layout(default_layout_blank)
+    fig.write_image(dirname+"figs\\blank\\"+filename+".svg", width=width*300, height=height*300, scale=1)
+    fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=2*300, height=2*300, scale=1)
+
+def export_facet(filename):
+    fig.update_layout(default_layout_html)
+    fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
+
+    fig.update_layout(default_layout)
+    fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=default_width*300, height=default_height*300, scale=1)
+
+    fig.update_layout(default_layout_blank)
+    fig.for_each_xaxis(lambda x: x.update({'title': ''}))
+    fig.for_each_yaxis(lambda y: y.update({'title': ''}))
+    fig.for_each_annotation(lambda a: a.update(text=""))
+    fig.update_xaxes(visible=False)
+
+    fig.write_image(dirname+"figs\\blank\\"+filename+".svg", width=default_width*300, height=default_height*300, scale=1)
+    fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=2*300, height=2*300, scale=1)
+
+def export_map(filename, width, height):
+    fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
+    fig.write_image(dirname+"figs\\png\\"+filename+".png", width=width*300, height=height*300, scale=1)
+
+    fig.update_layout(map_style="white-bg")
+    fig.write_image(dirname+"figs\\blank\\"+filename+".svg", width=width*300, height=height*300*.5, scale=1)
+    fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=2*300, height=2*300, scale=1)
+
 
 #%%
 
@@ -445,13 +429,64 @@ fig = px.density_heatmap(
         "Anchor": "Number of anchoring regions",
         "Visited": "Number of visited regions",}
 )
+fig.update_yaxes(range=[-0.5, 10.5])
 fig.update_layout(default_layout)
-#pyo.plot(fig, config=config)
+fig.update(layout_coloraxis_showscale=False)
+pyo.plot(fig, config=config)
+export_plot("regions_AVdensity", default_width, default_height)
 
-filename = "regions_AVdensity"
+#%%
+
+fig = px.density_heatmap(
+    regioncount, 
+    x='Anchor',
+    y='Visited',
+    color_continuous_scale=mycolors_continuous,
+    text_auto=".1f",
+    facet_col='Token',
+    histnorm='percent',
+    labels={
+        "Anchor": "Number of anchoring regions",
+        "Visited": "Number of visited regions",}
+)
+fig.update_yaxes(range=[-0.5, 10.5])
+fig.update_layout(default_layout)
+fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+fig.update(layout_coloraxis_showscale=False)
+
+fig.for_each_xaxis(lambda x: x.update({'title': ''}))
+fig.add_annotation(
+    showarrow=False,
+    xanchor='center',
+    xref='paper', 
+    x=0.5, 
+    yref='paper',
+    y=-.1,
+    text='Number of anchoring regions',
+    #font=dict(size=32)
+)
+
+pyo.plot(fig, config=config)
+#%%
+
+filename = "regions_AVdensity_bytoken"
+fig.update_layout(default_layout_html)
+fig['layout']['annotations'][4]['y'] = -.08 
 fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=1800, height=700)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+
+fig.update_layout(default_layout)
+fig.update_traces(textfont_size=24)
+fig['layout']['annotations'][4]['y'] = -.1 
+fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=default_width*300, height=default_height*300, scale=1)
+
+fig.update_layout(default_layout_blank)
+fig.for_each_xaxis(lambda x: x.update({'title': ''}))
+fig.for_each_yaxis(lambda y: y.update({'title': ''}))
+fig.for_each_annotation(lambda a: a.update(text=""))
+fig.update_xaxes(visible=False)
+
+fig.write_image(dirname+"figs\\blank\\"+filename+".svg", width=default_width*300, height=default_height*300, scale=1)
+fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=2*300, height=2*300, scale=1)
 
 #%% CALCULATE LIFT OF REGION TYPE BY TOKEN TYPE
 
@@ -544,14 +579,11 @@ fig = px.density_heatmap(tokensummary, x='region_name',
                           },
                      )
 fig.update_layout(default_layout)
+fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 fig.update(layout_coloraxis_showscale=False)
 pyo.plot(fig, config=config)
 
-filename = "regions_lift_bytoken"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=1800, height=700)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
-
+export_facet("regions_lift_bytoken")
 
 #%% PLOT DENSITY HEATMAP OF ANCHOR REGION TYPES
 
@@ -571,13 +603,11 @@ fig = px.density_heatmap(tokenplot, x='region_name',
                           },
                      )
 fig.update_layout(default_layout)
+fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 fig.update(layout_coloraxis_showscale=False)
 pyo.plot(fig, config=config)
 
-filename = "regions_anchortype_bytoken"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=1800, height=700)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+export_facet("regions_anchortype_bytoken")
 
 
 #%% SUMMARISE CARDS
@@ -624,12 +654,7 @@ testout.ffill(axis=0, inplace=True)
 # plot y = activity alpha x = time
 fig = px.line(testout, y=["activity_alpha_x","activity_alpha_y"], x="Cumulative_h")
 pyo.plot(fig, config=config)
-# filename = " "
-# fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-# fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=1800, height=700)
-# fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
 
-#
 # plot y = region x = time
 fig = px.line(testout, y=["final_regionID_x","final_regionID_y"], x="Cumulative_h")
 pyo.plot(fig, config=config)
@@ -673,10 +698,6 @@ fig.update_scenes(
 )
 
 pyo.plot(fig, config=config)
-# filename = " "
-# fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-# fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=1800, height=700)
-# fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
 
 
 #%% PLOT TO DETERMINE START OF DAY
@@ -703,18 +724,17 @@ fig = px.histogram(activities['daystart_round'],
                    color_discrete_sequence=[mycolors_discrete[7]])
 
 fig.update_layout(
-    default_layout_journal,
+    default_layout_html,
     yaxis_title_text = 'Number of activities',
     xaxis_title_text = 'Time of day',
     showlegend=False,
 )
+fig.update_layout(yaxis_range=[0,350000])
 fig.update_xaxes(range=[0, 24])
 
 pyo.plot(fig, config=config)
-filename = "routines_daystart"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+
+export_plot("routines_daystart", plot_width, default_height)
 
 #%% WORK OUT WHICH ACTIVITIES OCCUR IN SAME PERIOD
 # and split those that go over the time between periods
@@ -875,12 +895,10 @@ fig.update_layout(
     yaxis_title_text = 'Number of sequences',
     xaxis_title_text = 'Sequence length',
     showlegend=False)
-pyo.plot(fig, config=config)
+fig.update_layout(yaxis_range=[0,60000])
 
-filename = "routines_sequencelength"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+pyo.plot(fig, config=config)
+export_plot("routines_sequencelength", plot_width, default_height)
 
 
 #%% GET HOME GEOMETRY & PUT HUBS ONTO SEQUENCES
@@ -951,11 +969,6 @@ fig = px.scatter_map(hubs_def,
                         size_max=15, zoom=10)
 fig.update_layout(map_style="light")
 pyo.plot(fig, config=config)
-# filename = "routines_name"
-# fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-# fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-# fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
-
 
 #%% GET FIVE CLOSEST HUBS VIA EUCLIDEAN DISTANCE
 
@@ -996,6 +1009,16 @@ homeregions[['nearest_hub','nearest_stop']] = homeregions.apply(get_nearest_hub,
 
 # sense checks the nearest hub allocation
 
+import random
+random.seed(45)
+
+list_1 = random.sample(mycolors_discrete, k=len(mycolors_discrete))
+list_2 = random.sample(mycolors_discrete, k=len(mycolors_discrete))
+list_3 = random.sample(mycolors_discrete, k=len(mycolors_discrete))
+list_4 = random.sample(mycolors_discrete, k=len(mycolors_discrete))
+
+full_colours = mycolors_discrete+list_1+list_2+list_3+list_4
+
 fig = px.scatter_map(homeregions, 
                         lat=homeregions.geometry.y, 
                         lon=homeregions.geometry.x,     
@@ -1004,29 +1027,16 @@ fig = px.scatter_map(homeregions,
                         # there are mulitple stops per hub, just depends 
                         # how you want to see this as to which is appropriate to map
                         hover_name=homeregions['Cardid'],
-                        #color_discrete_sequence=mycolors_discrete,
-                        center={"lat": -31.95, "lon": 115.9}, # this is the maylands peninsula-ish
-                        zoom=14,
+                        color_discrete_sequence=full_colours,
+                        center={"lat": -31.95, "lon": 115.91}, # this is the maylands peninsula-ish
+                        zoom=12.9,
                         )
-fig.add_trace(
-    go.Scattermap(
-        lat=hubs_def["geometry"].y,
-        lon=hubs_def["geometry"].x,
-        hovertext=hubs_def['hubID'],
-        mode="markers",
-        marker=go.scattermap.Marker(
-            color='black',
-            size=12,
-        ),
-    )
-)
-fig.update_layout(map_style="light", showlegend=False)
-pyo.plot(fig, config=config)
-#filename = "hubprofile_allocation_euclidean"
-# fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-# fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-# fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
 
+fig.update_traces(marker=dict(size=11)) 
+fig.update_layout(map_style="light", showlegend=False, margin=dict(l=0, r=0, t=0, b=0, pad=0))
+pyo.plot(fig, config=config)
+
+export_map("hubprofile_allocation_euclidean", 2, 2)
 
 #%%
 
@@ -1050,7 +1060,7 @@ def find_nearest_hub_OSM(row):
         if len(route[0])<=1:
             dist = 0
         else:
-            gdf = ox.routing.route_to_gdf(G, route[0], 'length')
+            gdf = ox.routing.route_to_gdf(G, route[0], weight='length')
             dist = gdf["length"].sum()
         dists = dists+[dist]
        # fig, ax = ox.plot_graph_route(G, route[0], route_color="y", route_linewidth=6, node_size=0)
@@ -1086,7 +1096,7 @@ def find_nearest_hub_OSM_graph(row):
         if len(route[0])<=1:
             dist = 0
         else:
-            gdf = ox.routing.route_to_gdf(G, route[0], 'length')
+            gdf = ox.routing.route_to_gdf(G, route[0], weight='length')
             dist = gdf["length"].sum()
         dists = dists+[dist]
         fig, ax = ox.plot_graph_route(G, route[0], route_color="r", route_linewidth=6, 
@@ -1136,7 +1146,6 @@ homeregion_test = homeregions[homeregions['Cardid']==10538356]
 homeregion_test['nearest_hub_OSM'] = homeregion_test.apply(find_nearest_hub_OSM_graph, axis=1)
 
 
-
 #%% MAP HOME REGION, CURRENT ALLOCATION, NEW ALLOCATION AND CANDIDATE STOPS
 
 candidate_stops =  hubs_def.iloc[[homeregion_test['0_ix'].iloc[0], 
@@ -1165,13 +1174,9 @@ fig = px.scatter_map(allstops,
                         )
 
 fig.update_traces(marker=dict(size=20, opacity=1))
-fig.update_layout(map_style="light")
+fig.update_layout(map_style="light", margin=dict(l=0, r=0, t=0, b=0, pad=0))
 pyo.plot(fig, config=config)
-#%%
-filename = "hubprofile_streetmap_example"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+export_map("hubprofile_streetmap_example", default_width, default_height)
 
 #%% GET UNIQUE GEOMETRIES
 # make sure it doesn't take any longer than it has to
@@ -1888,13 +1893,11 @@ fig = px.line(plotdf1, x="num", y=['Visited labelled V and anchoring labelled A'
                    }) 
 fig.update_layout(yaxis_range=[0,100],
                   showlegend=False,)
-fig.update_layout(default_layout_journal)
+fig.update_layout(default_layout_html)
 pyo.plot(fig, config=config)
 
-filename = "routines_cumulativegraphcount"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=1800, height=700)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+
+export_plot("routines_cumulativegraphcount", plot_width, default_height)
 
 #%% HISTOGRAM OF GRAPH COUNTS
 
@@ -1935,13 +1938,10 @@ fig.update_yaxes(
         range=[0, 100],
     )
 
-fig.update_layout(default_layout_journal)
+fig.update_layout(default_layout_html)
 pyo.plot(fig)
 
-filename = "routines_histgraphcount"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=1800, height=700)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+export_plot("routines_histgraphcount", plot_width, default_height)
 
 #%% GET COUNTS OF CARDS IN DATASET
 # idea here is to see how different weeks appear for a card
@@ -2024,7 +2024,7 @@ hist_input['variable'] = np.where(hist_input['variable']=='diameter', "Diameter"
 fig = make_subplots(rows=2, cols=2,
                     shared_xaxes='all',
                     shared_yaxes='all',
-                    vertical_spacing=0.09,
+                    vertical_spacing=0.15,
                     horizontal_spacing=0.04,
                     x_title="Value",
                     y_title="Frequency",
@@ -2034,7 +2034,7 @@ fig.add_trace(go.Histogram(x=hist_input['value'][hist_input['variable']=='Number
 fig.add_trace(go.Histogram(x=hist_input['value'][hist_input['variable']=='Number of visited regions'], marker_color=mycolors_discrete[7]), row=2, col=1)
 fig.add_trace(go.Histogram(x=hist_input['value'][hist_input['variable']=='Number of edges'], marker_color=mycolors_discrete[7]), row=1, col=2)
 fig.add_trace(go.Histogram(x=hist_input['value'][hist_input['variable']=='Diameter'], marker_color=mycolors_discrete[7]), row=2, col=2)
-fig.update_layout(default_layout_journal, showlegend=False)
+fig.update_layout(default_layout, showlegend=False)
 fig.update_xaxes(
             zeroline=True,
             mirror=True,
@@ -2066,19 +2066,40 @@ fig.update_yaxes(
         zerolinewidth=line_width,
         separatethousands=True,
         tickformat=",",
-        title_standoff = 50,
         range=[0, 2500],
         #title='Frequency'
     )
 
+
 fig['layout']['annotations'][5]['y'] = 0.54 
-#pyo.plot(fig, config=config)
+fig['layout']['annotations'][5]['x'] = -0.03 
 
+fig['layout']['annotations'][4]['y'] = -0.04
+
+
+fig.update_layout(
+    margin=dict(l=150, b=150) # Values in pixels
+)
+
+pyo.plot(fig, config=config)
+
+# this one is exported manually to handle the subplots
 filename = "routines_clusterinputhist"
+width = default_width
+height = default_height
+fig.update_layout(default_layout_html)
 fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=1000, height=1000)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
 
+fig.update_layout(default_layout)
+fig.update_annotations(font_size=32)
+fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=width*300, height=height*300, scale=1)
+
+fig.update_xaxes(visible=False)
+fig.update_yaxes(visible=False)
+fig.for_each_annotation(lambda a: a.update(text=""))
+fig.update_layout(default_layout_blank)
+fig.write_image(dirname+"figs\\blank\\"+filename+".svg", width=width*300, height=height*300, scale=1)
+fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=2*300, height=2*300, scale=1)
 
 #%% NORMALISE Z-SCORE
 
@@ -2104,24 +2125,58 @@ n_components = np.arange(1, 20)
 models = [GaussianMixture(n, random_state=init_state).fit(cluster_input[cluster_cols_suffix]) for n in n_components]
 
 d = {"BIC": [m.bic(cluster_input[cluster_cols_suffix]) for m in models], 
-      "AIC": [m.aic(cluster_input[cluster_cols_suffix]) for m in models]}
+      "AIC": [m.aic(cluster_input[cluster_cols_suffix]) for m in models],
+      "num_clusters": [n for n in n_components]}
 df = pd.DataFrame(data=d)
 
 #%% PLOT TO DETERMINE NUMBER OF CLUSTERS
+
+NUM_COMPONENTS = 7 
+# from later in the code, after checking stability too, but needed here to plot
+
 fig = px.line(
     df,
-    color_discrete_sequence=mycolors_discrete,
-    labels={"index": "Number of clusters", 
+    x='num_clusters',
+    y = 'BIC',
+    color_discrete_sequence=[mycolors_discrete[7]],
+    labels={"num_clusters": "Number of clusters", 
             "value": "", 
             "variable": "Criteria"},
 )
-fig.update_layout(default_layout_journal)
-pyo.plot(fig, config=config)
+fig.update_layout(default_layout)
+fig.update_layout(yaxis_range=[-50000,50000])
 
-filename = "routines_AICBIC"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=1800, height=700)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+fig.add_trace(go.Scatter(
+    x=[NUM_COMPONENTS], 
+    y=[df['BIC'].loc[NUM_COMPONENTS-1]],
+    mode='markers',  
+    marker=dict(size=20)
+))
+fig.update_layout(showlegend=False)
+pyo.plot(fig, config=config)
+export_plot("routines_BIC", subplot_width, default_height)
+
+fig = px.line(
+    df,
+    x = "num_clusters",
+    y = 'AIC',
+    color_discrete_sequence=[mycolors_discrete[7]],
+    labels={"num_clusters": "Number of clusters", 
+            "value": "", 
+            "variable": "Criteria"},
+)
+fig.update_layout(default_layout)
+fig.update_layout(yaxis_range=[-50000,50000])
+
+fig.add_trace(go.Scatter(
+    x=[NUM_COMPONENTS], 
+    y=[df['AIC'].loc[NUM_COMPONENTS-1]],
+    mode='markers',  
+    marker=dict(size=20)
+))
+fig.update_layout(showlegend=False)
+pyo.plot(fig, config=config)
+export_plot("routines_AIC", subplot_width, default_height)
 
 
 #%% TEST CLUSTER STABILITY
@@ -2202,7 +2257,7 @@ fig = px.bar(
     barmode="group",
     labels={'variable':'Sample size'}
 )
-fig.update_layout(default_layout_journal)
+fig.update_layout(default_layout_html)
 fig.update_layout(xaxis_title="Number of clusters",
                   yaxis_title="Instability",)
 for i in np.arange(instability['num_clusters'].min(),instability['num_clusters'].max()):
@@ -2217,10 +2272,7 @@ fig.update_layout(yaxis_range=[0,1],     xaxis=dict(
 
 pyo.plot(fig, config=config)
 
-filename = "routines_stability"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=1800, height=700)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+export_plot("routines_instability", plot_width, default_height)
 
 
 #%% FIT GMM TO SELECTED NUMBER OF CLUSTERS
@@ -2246,7 +2298,7 @@ outbox = pd.melt(
     #value_vars=cluster_cols_suffix,
 )
 
-map_dict = {'num_edges':'Number edges', 'anchoring_reg_count':'Anchor regions', 'visited_reg_count':'Visited regions','diameter':'Diameter'}
+map_dict = {'num_edges':'Edges', 'anchoring_reg_count':'Anchoring regions', 'visited_reg_count':'Visited regions','diameter':'Diameter'}
 
 outbox['variable'] = outbox['variable'].map(map_dict)
 
@@ -2258,11 +2310,31 @@ fig = px.box(
     color_discrete_sequence=mycolors_discrete,
     labels={'Cluster_475': "Cluster", "value": "Count", "variable": "Parameter"},
 )
-fig.update_layout(default_layout_box_journal)
+fig.update_layout(default_layout)
 
 fig.update_yaxes(
     range=(0, 20),
     constrain='domain'
+)
+
+clustermap = {
+    0: "Commuting to<br>one place",
+    1: "One-way trips",
+    2: "Multi-stop<br>chains",
+    3: "Return to/from<br>three places",
+    4: "Return to/from<br>two places",
+    5: "One-way trips<br>with some return",
+    6: "Extended<br>multi-stop chains"
+}
+
+cluster_names = list(clustermap.values())
+
+fig.update_xaxes(
+    tickmode="array",
+    tickvals=list(range(len(cluster_names))),
+    ticktext=cluster_names,
+    #tickfont_size=22
+    tickangle=0
 )
 
 for i in np.arange(0,outbox[colname_init].max()):
@@ -2273,9 +2345,20 @@ for i in np.arange(0,outbox[colname_init].max()):
 pyo.plot(fig, config=config)
 
 filename = "routines_clusterboxplot"
+width = default_width
+height = default_height
+
+fig.update_layout(default_layout_html)
 fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=1800, height=700)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+
+fig.update_layout(default_layout)
+fig.update_xaxes(tickfont_size=26)
+fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=width*300, height=height*300, scale=1)
+
+fig.update_layout(default_layout_blank)
+fig.layout.shapes = [] # this removes the vertical lines
+fig.write_image(dirname+"figs\\blank\\"+filename+".svg", width=width*300, height=height*300, scale=1)
+fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=2*300, height=2*300, scale=1)
 
 #%% PUT CLUSTERS BACK ONTO FULL DATASET
 
@@ -2430,80 +2513,6 @@ for i in range(0,n):
         
 
 
-#%%
-
-# also has merit. subplots of different combinations of parameters
-fig1 = px.density_contour(cluster_input, x="anchoring_reg_count", y="visited_reg_count",color=colname_init, facet_col=colname_init)
-fig2 = px.density_contour(cluster_input, x="anchoring_reg_count", y="num_edges",color=colname_init, facet_col=colname_init)
-fig3 = px.density_contour(cluster_input, x="anchoring_reg_count", y="diameter",color=colname_init, facet_col=colname_init)
-fig4 = px.density_contour(cluster_input, x="visited_reg_count", y="num_edges",color=colname_init, facet_col=colname_init)
-fig5 = px.density_contour(cluster_input, x="visited_reg_count", y="diameter",color=colname_init, facet_col=colname_init)
-fig6 = px.density_contour(cluster_input, x="num_edges", y="diameter",color=colname_init, facet_col=colname_init)
- 
-import plotly.subplots as sp
-
-figure1_traces = []
-figure2_traces = []
-figure3_traces = []
-figure4_traces = []
-figure5_traces = []
-figure6_traces = []
-for trace in range(len(fig1["data"])):
-    figure1_traces.append(fig1["data"][trace])
-for trace in range(len(fig2["data"])):
-    fig2["data"][trace]['showlegend'] = False   
-    figure2_traces.append(fig2["data"][trace])
-for trace in range(len(fig3["data"])):
-    fig3["data"][trace]['showlegend'] = False   
-    figure3_traces.append(fig3["data"][trace])
-for trace in range(len(fig4["data"])):
-    fig4["data"][trace]['showlegend'] = False   
-    figure4_traces.append(fig4["data"][trace])
-for trace in range(len(fig5["data"])):
-    fig5["data"][trace]['showlegend'] = False   
-    figure5_traces.append(fig5["data"][trace])
-for trace in range(len(fig6["data"])):
-    fig6["data"][trace]['showlegend'] = False   
-    figure6_traces.append(fig6["data"][trace])
-
-this_figure = sp.make_subplots(rows=6, cols=5, vertical_spacing = 0.09)
-
-# Get the Express fig broken down as traces and add the traces to the proper plot within in the subplot
-for i in np.arange(0,len(figure1_traces)):
-    this_figure.append_trace(figure1_traces[i], row=1, col=i+1)
-for i in np.arange(0,len(figure2_traces)):
-    this_figure.append_trace(figure2_traces[i], row=2, col=i+1)
-for i in np.arange(0,len(figure3_traces)):
-    this_figure.append_trace(figure3_traces[i], row=3, col=i+1)
-for i in np.arange(0,len(figure4_traces)):
-    this_figure.append_trace(figure4_traces[i], row=4, col=i+1)
-for i in np.arange(0,len(figure5_traces)):
-    this_figure.append_trace(figure5_traces[i], row=5, col=i+1)
-for i in np.arange(0,len(figure6_traces)):
-    this_figure.append_trace(figure6_traces[i], row=6, col=i+1)
-
-this_figure['layout']['xaxis']['title']='anchor region count'
-this_figure['layout']['yaxis']['title']='visited region count'
-
-this_figure['layout']['xaxis6']['title']='anchor region count'
-this_figure['layout']['yaxis6']['title']='unique edges'
-
-this_figure['layout']['xaxis11']['title']='anchor region count'
-this_figure['layout']['yaxis11']['title']='diameter'
-
-this_figure['layout']['xaxis16']['title']='visited region count'
-this_figure['layout']['yaxis16']['title']='unique edges'
-
-this_figure['layout']['xaxis21']['title']='visited region count'
-this_figure['layout']['yaxis21']['title']='diameter'
-
-this_figure['layout']['xaxis26']['title']='unique edges'
-this_figure['layout']['yaxis26']['title']='diameter'
-
-pyo.plot(this_figure, config=config)
-# filename = "prep_staydistance_full"
-# fig.write_html(dirname+filename+".html", include_plotlyjs='cdn', config=config)
-# fig.write_image(dirname+filename+".svg")
 
 #%% TOKEN TYPES BY CLUSTER
 
@@ -2643,10 +2652,6 @@ hubsummary['lift'] = (hubsummary['perc_cluster']/100)/(hubsummary['total_allocat
 hubnames= pd.read_csv('C:\\Users\\megan\\Desktop\\PhD data\\hubs2017\\csv\\hubsinfoforRailSmart\hubnames.csv')
 hubsummary = pd.merge(hubsummary, hubnames, left_on='nearest_hub_osm', right_on='hubID', how='left')
 
-hubsummary.to_csv(dirname+"hubsummary_lift.csv")
-
-
-
 #%% CALCULATE HUB CENTRE POINTS
 
 # calculate centroid of stops for each hub so there is only one geographical point per hub
@@ -2698,12 +2703,13 @@ grid_df= grid_df.set_crs("epsg:4326", allow_override=True)
 fig = px.choropleth_map(grid_df, 
                         geojson=grid_df.geometry, 
                         locations=grid_df.index,     
-                        center=map_center,
+                        center=dict(lat=-32.1, lon=115.864055),
                         color='label',
-                        map_style = 'carto-positron-nolabels',
+#                        map_style = 'carto-positron-nolabels',
+                        map_style = 'carto-positron-nolabels',                                                
                         color_discrete_sequence=mycolors_discrete,
                         opacity=0.2,
-                        zoom=10)
+                        zoom=8.4)
 
 grid_df_point = grid_df.to_crs(epsg=32749)
 grid_df_point['geometry'] = grid_df_point['geometry'].centroid
@@ -2720,12 +2726,10 @@ fig.add_trace(
     )
 )
 
+fig.update_layout(showlegend=False, margin=dict(l=0, r=0, t=0, b=0, pad=0))
 pyo.plot(fig, config=config)
 
-filename = "routines_gridmap"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+export_map("routines_gridmap", 2, 3.5)
 
 
 #%% PUT GRID LABELS ONTO SUMMARY
@@ -2733,7 +2737,41 @@ fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
 hub_centre_point = hub_centre_point.overlay(grid_df, how='intersection')
 
 hubsummary = pd.merge(hubsummary, hub_centre_point[['hubID','label']], on='hubID', how='left')
+
+#%% 
+
+# TODO up to here
+
+# expected value = total_allocated * total_cluster / (sum of count)
+hubsummary['exp_value'] = (hubsummary['total_allocated']*hubsummary['total_cluster'])/(hubsummary['count'].sum())
+
+# pearson residual = (count - expected value)/sqrt(expected value)
+hubsummary['pearson_resid'] = (hubsummary['count']-hubsummary['exp_value'])/(hubsummary['exp_value'].pow(0.5))
+
+# Bucketed residual - define manual bin edges
+bins = [hubsummary['pearson_resid'].min(), -3.29, -2.58, -1.96, 1.96, 2.58, 3.29, hubsummary['pearson_resid'].max()]
+
+# Apply manual cut
+hubsummary['pearson_resid_bin'] = pd.cut(hubsummary['pearson_resid'], bins=bins, labels=['Extreme (under)', 'Moderate (under)', 'Slight (under)', "Neutral", 'Slight (over)', 'Moderate (over)', 'Extreme (over)'])
+
+# filtered residual = replace residual with "Insufficient data" if count==0
+hubsummary['pearson_resid'] = np.where(hubsummary['count']==0,"Insufficient data", hubsummary['pearson_resid'])
+hubsummary['pearson_resid_bin'] = np.where(hubsummary['count']==0,"Insufficient data", hubsummary['pearson_resid_bin'])
+
+# mixture = 0.5*(count/total_allocated + total_cluster/(sum of count))
+hubsummary['mixture'] = 0.5*(hubsummary['count']/hubsummary['total_allocated'] + hubsummary['total_cluster']/hubsummary['count'].sum())
+
+# KLD(hub to mixture) count/total_allocated * log2((count/total allocated)/mixture)
+# KLD(population to mixture) = total_cluster/(sum of count) * log2((total_cluster/(sum of count))/mixture)
+hubsummary['KLD_hub_mix'] = hubsummary['count']/hubsummary['total_allocated'] * np.log2((hubsummary['count']/hubsummary['total_allocated'])/hubsummary['mixture'])
+hubsummary['KLD_pop_mix'] = hubsummary['total_cluster']/hubsummary['count'].sum() * np.log2((hubsummary['total_cluster']/hubsummary['count'].sum())/hubsummary['mixture'])
+
+# then group by hubname and calculate JSD
+hubsummary_jsd = hubsummary.groupby(['hubID']).agg({'KLD_hub_mix':'sum', 'KLD_pop_mix':'sum'})
+hubsummary_jsd['JSD'] = 0.5*hubsummary_jsd['KLD_hub_mix'] + 0.5*hubsummary_jsd['KLD_pop_mix']
+
 hubsummary.to_csv(dirname+"hubsummary_lift.csv")
+hubsummary_jsd.to_csv(dirname+"hubsummary_jsd.csv")
 
 
 #%% PLOT HUB CENTRE POINTS
@@ -2746,9 +2784,6 @@ fig = px.scatter_map(hub_centre_point,
                         size_max=15, zoom=10)
 fig.update_layout(map_style="light")
 pyo.plot(fig, config=config)
-# filename = "prep_staydistance_full"
-# fig.write_html(dirname+filename+".html", include_plotlyjs='cdn', config=config)
-# fig.write_image(dirname+filename+".svg")
 
 
 #%% EXPLORATION OF NUMBER SEQUENCES PER HUB
@@ -2784,9 +2819,6 @@ fig = px.scatter_map(hubrecordcount,
                         size_max=15, zoom=10)
 fig.update_layout(map_style="light")
 pyo.plot(fig, config=config)
-# filename = "prep_staydistance_full"
-# fig.write_html(dirname+filename+".html", include_plotlyjs='cdn', config=config)
-# fig.write_image(dirname+filename+".svg")
 
 
 #%% HISTOGRAM OF NUMBER OF SEQUENCES PER HUB
@@ -2799,13 +2831,12 @@ fig = px.histogram(
 fig.update_layout(
     default_layout,
     yaxis_title_text = 'Number of hubs',
-    xaxis_title_text = 'Number of sequences')
-#pyo.plot(fig, config=config)
+    xaxis_title_text = 'Number of sequences',
+    showlegend=False,
+   )
+pyo.plot(fig, config=config)
 
-filename = "hubprofile_numhubs"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+export_plot("hubprofile_numhubs", plot_width, default_height)
 
 #%% MAP OF HUBS, COLOURED BY LIFT
 
@@ -2865,7 +2896,7 @@ geopolys.to_crs(epsg=4326, inplace=True)
 
 #%% GET CENSUS DATA
 
-census_dir = '2016_GCP_SA1_for_WA_short-header\\2016 Census GCP Statistical Area 1 for WA\\'
+census_dir = '2016 Census GCP Statistical Area 1 for WA\\'
 census_file = '2016Census_G40_WA_SA1.csv'
 index_col = ['SA1_7DIGITCODE_2016']
 data_cols = ['P_15_yrs_over_P',
@@ -2918,12 +2949,8 @@ fig.update_yaxes(
     range=(0, 100),
     constrain='domain'
 ) 
-#pyo.plot(fig)
-
-filename = "hubprofile_labourforce"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+pyo.plot(fig)
+export_plot("hubprofile_labourforce", plot_width, default_height)
 
 
 #%% PLOT MAP - SA1 BOUNDARIES + STOP CLUSTERS WITH 100M BUFFER
@@ -2963,6 +2990,7 @@ fig.add_trace(
 
 # now add boundaries we want
 fig.update_layout(
+    margin=dict(l=0, r=0, t=0, b=0, pad=0),
     coloraxis_showscale=False,
     map={
         "style":"light",
@@ -2976,13 +3004,8 @@ fig.update_layout(
     },
 )
 
-#pyo.plot(fig)
-
-filename = "hubprofile_SA1withstops"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=1800, height=700)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
-
+pyo.plot(fig)
+export_map("hubprofile_SA1withstops", default_width, default_height)
 
 #%% PLOT MAP - SA1 LABOUR FORCE PARTICIPATION + STOP CLUSTERS
 
@@ -3012,15 +3035,12 @@ fig.add_trace(
 
     )
 )
-
+fig.update_layout(coloraxis_showscale=False, margin=dict(l=0, r=0, t=0, b=0, pad=0))
 fig.update_layout(map_style='light')
 
-#pyo.plot(fig)
+pyo.plot(fig)
 
-filename = "hubprofile_labourforcemap"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=1800, height=700)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+export_map("hubprofile_labourforcemap", default_width, default_height)
 
 
 #%% SUBURB LEVEL ASSESSMENT
@@ -3066,6 +3086,7 @@ fig.add_trace(
 
 # now add boundaries we want
 fig.update_layout(
+    margin=dict(l=0, r=0, t=0, b=0, pad=0),
     coloraxis_showscale=False,
     map={
         "style":"light",
@@ -3079,12 +3100,9 @@ fig.update_layout(
     },
 )
 # could add another choropleth layer with opacity=0 with hover info = suburb name
-#pyo.plot(fig)
+pyo.plot(fig)
+export_map("hubprofile_suburbmap", default_width, default_height)
 
-filename = "hubprofile_suburbmap"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=1800, height=700)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
 
 #%%
 

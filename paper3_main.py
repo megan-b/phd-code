@@ -82,16 +82,21 @@ bg_colour = "white"
 line_width = 0.5
 map_center = {"lat": -31.952195, "lon": 115.864055}
 
+default_width = 6.7
+default_height = 0.5*default_width
+
+plot_width = 0.8*default_width
+subplot_width = 0.5*default_width # to fit two side-by-side
+
 default_layout = dict(yaxis=dict(
-#        autorange=True,
         showgrid=True,
-        zeroline=True,
         mirror=True,
-        showline=True,
+        zeroline=True,
+        showline=True, 
         ticks="outside",
         tickcolor=line_colour,
         ticklen=5,
-        linewidth=line_width,
+        linewidth=line_width, 
         linecolor=line_colour,
         gridcolor=line_colour,
         gridwidth=line_width,
@@ -101,35 +106,30 @@ default_layout = dict(yaxis=dict(
         tickformat=",",
     ),
         xaxis=dict(
-            zeroline=True,
             mirror=True,
-            showline=True,
-            ticks="outside",
-            tickcolor=line_colour,
-            ticklen=5,
-            linewidth=line_width,
+            linewidth=line_width, 
             linecolor=line_colour,
-            zerolinecolor=line_colour,
-            zerolinewidth=line_width,
             separatethousands=True,
             tickformat=",",
     ),
     paper_bgcolor=bg_colour,
     plot_bgcolor=bg_colour,
     font=dict(
-        size=14,
-        color="black"
+        size=32,
+        color="black",
+        family="CMU Serif",
     )
 )
 
-default_layout_box = dict(yaxis=dict(
+default_layout_html = dict(yaxis=dict(
         showgrid=True,
-        zeroline=True,
         mirror=True,
+        zeroline=True,
+        showline=True, 
         ticks="outside",
         tickcolor=line_colour,
         ticklen=5,
-        linewidth=line_width,
+        linewidth=line_width, 
         linecolor=line_colour,
         gridcolor=line_colour,
         gridwidth=line_width,
@@ -140,7 +140,7 @@ default_layout_box = dict(yaxis=dict(
     ),
         xaxis=dict(
             mirror=True,
-            linewidth=line_width,
+            linewidth=line_width, 
             linecolor=line_colour,
             separatethousands=True,
             tickformat=",",
@@ -148,10 +148,68 @@ default_layout_box = dict(yaxis=dict(
     paper_bgcolor=bg_colour,
     plot_bgcolor=bg_colour,
     font=dict(
-        size=14,
-        color="black"
+        size=16,
+        color="black",
+        family="Arial",
     )
 )
+
+default_layout_blank = dict(yaxis=dict(
+        visible=False,
+    ),
+        xaxis=dict(
+            visible=False,
+    ),
+    paper_bgcolor=bg_colour,
+    plot_bgcolor=bg_colour,
+    showlegend=False,
+)
+
+#%% EXPORT FUNCTIONS
+
+def export_plot(filename, width, height):
+    fig.update_layout(default_layout_html)
+    fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
+
+    fig.update_layout(default_layout)
+    fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=width*300, height=height*300, scale=1)
+
+
+    trace_types = [trace.type for trace in fig.data]
+    
+    if trace_types[0] == "histogram2d":
+       fig.update_traces(texttemplate=None)
+    if (trace_types[0] =='box') or (trace_types[0]=='bar'):
+        fig.layout.shapes = [] # this removes the vertical lines
+
+    fig.update_layout(default_layout_blank)
+    fig.write_image(dirname+"figs\\blank\\"+filename+".svg", width=width*300, height=height*300, scale=1)
+    fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=2*300, height=2*300, scale=1)
+
+def export_facet(filename):
+    fig.update_layout(default_layout_html)
+    fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
+
+    fig.update_layout(default_layout)
+    fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=default_width*300, height=default_height*300, scale=1)
+
+    fig.update_layout(default_layout_blank)
+    fig.for_each_xaxis(lambda x: x.update({'title': ''}))
+    fig.for_each_yaxis(lambda y: y.update({'title': ''}))
+    fig.for_each_annotation(lambda a: a.update(text=""))
+    fig.update_xaxes(visible=False)
+
+    fig.write_image(dirname+"figs\\blank\\"+filename+".svg", width=default_width*300, height=default_height*300, scale=1)
+    fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=2*300, height=2*300, scale=1)
+
+def export_map(filename, width, height):
+    fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
+    fig.write_image(dirname+"figs\\png\\"+filename+".png", width=width*300, height=height*300, scale=1)
+
+    fig.update_layout(map_style="white-bg")
+    fig.write_image(dirname+"figs\\blank\\"+filename+".svg", width=width*300, height=height*300*.5, scale=1)
+    fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=2*300, height=2*300, scale=1)
+
 
 #%% USEFUL FUNCTIONS
 
@@ -512,6 +570,7 @@ fig = px.histogram(
     color_discrete_sequence=[mycolors_discrete[7]],
     histnorm='percent',
 )
+fig.update_yaxes(range=[0, 40])
 fig.update_layout(
     default_layout,
     yaxis_title_text = 'Frequency of occurrence (%)',
@@ -519,10 +578,7 @@ fig.update_layout(
     showlegend=False)
 pyo.plot(fig, config=config)
 
-filename = "pmed_time_example_perthsubiaco"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+export_plot("pmed_time_example_perthsubiaco", plot_width, default_height)
 
 
 #%% PLOT HISTOGRAM OF ALL DURATIONS
@@ -704,9 +760,6 @@ fig.update_layout(default_layout)
 fig.update_layout(map_style="light")
 fig.update_traces(marker=dict(size=10))
 pyo.plot(fig, config=config)
-
-# filename = 'smartrider_graph'
-# fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
 
 #%% FIND JOURNEYS USED IN REGIONS ANALYSIS
 
@@ -1153,9 +1206,6 @@ for n in np.arange(0, 80):
 fig.update_layout(default_layout)
 fig.update_layout(map_style="light")
 pyo.plot(fig, config=config)
-
-# filename = 'demand_candidate_graph'
-# fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
   
 
 #%% WORKING OUT THE REGIONS EITHER SIDE OF VISITED REGIONS
@@ -1438,27 +1488,31 @@ clusters['outside CBD check'] = clusters.apply(in_cbd, axis=1)
 
 #%% PLOT MAP TO DEMONSTRATE EXCLUSION RULES
 
-clusters_map = clusters[(clusters['jdlp check']==True)&(clusters['bbox check']==True)]
+map_plot = "outside CBD"
+clusters_map = clusters[(clusters[map_plot+' check']==True)&(clusters['bbox check']==True)]
 
-map_center = {"lat": -32.1, "lon": 115.864055}
+# for full maps
+map_center = {"lat": -32.1, "lon": 115.88} 
+zoom_main = 9
+
+# for the CBD inset
+map_center_cbd = {"lat": -31.9436, "lon": 115.8645} 
+zoom_cbd = 11.6
+height_cbd = 1.5
 
 fig = px.scatter_map(
     clusters_map,
     lat=clusters_map["geometry"].y,
     lon=clusters_map["geometry"].x,
     color_discrete_sequence=mycolors_discrete,
-    center=map_center,
-    zoom=8.4,
+    center=map_center_cbd,
+    zoom=zoom_cbd,
 )
 fig.update_layout(default_layout)
-fig.update_layout(map_style="light")
+fig.update_layout(map_style="light", margin=dict(l=0, r=0, t=0, b=0, pad=0))
 fig.update_traces(marker=dict(size=4))
 pyo.plot(fig, config=config)
-
-filename = "pmed_map_jdlp"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+export_map("pmed_map_"+map_plot, 1.5, default_height)
 
 
 #%% WORK OUT WHICH SPATIAL CLUSTERS HAVE ALREADY BEEN USED
@@ -2617,8 +2671,8 @@ journeys_agg_all = pd.read_pickle(dirname+"20260307-journeys-agg-all.pkl")
 journeys_agg_all.rename(columns={'dist_total':'current_dist_total'}, inplace=True)
 
 p=10
-filename_suffix='outCBD'
-location_str = 'outside CBD'
+filename_suffix='jdlp'
+location_str = 'jdlp'
 
 assignments = pd.read_pickle(dirname+"pmed results\\7200000-assignments-"+filename_suffix+"-"+str(p)+"-mine.pkl")
 assignments_trad = pd.read_pickle(dirname+"pmed results\\7200000-assignments-"+filename_suffix+"-"+str(p)+"-trad.pkl")
@@ -2673,6 +2727,7 @@ journeys_agg_card.reset_index(inplace=True)
 num_cards = len(journeys_agg_card['Cardid'].unique())
 print(num_cards,"cards in set")
 
+print("full dataset - not just s+t>2")
 print("vs home")
 for p_explore in [10, 20, 30]:
     print("for p=", p_explore)
@@ -2693,15 +2748,14 @@ for p_explore in [10, 20, 30]:
     
     print(len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_home']==0]),"cards with no change to time,",
           len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_home']==0])/num_cards*100,"percent")
-    
+
 print("\nvs trad")
-journeys_agg_card_trad = journeys_agg_card[(journeys_agg_card['num_origin']!=1)|(journeys_agg_card['num_destination']!=1)]
-num_cards = len(journeys_agg_card_trad['Cardid'].unique())
+num_cards = len(journeys_agg_card['Cardid'].unique())
 print(num_cards,"cards in set")
 
 for p_explore in [10, 20, 30]:
     print("for p=", p_explore)
-    journeys_agg_card_p = journeys_agg_card_trad[journeys_agg_card_trad['p']==p_explore]
+    journeys_agg_card_p = journeys_agg_card[journeys_agg_card['p']==p_explore]
     journeys_agg_card_p = journeys_agg_card_p.groupby('Cardid').sum()
     print(len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_trad']>0]),"cards with reduced time,",
           len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_trad']>0])/num_cards*100,"percent")
@@ -2717,6 +2771,66 @@ for p_explore in [10, 20, 30]:
     
     print(len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_trad']==0]),"cards with no change to time,",
           len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_trad']==0])/num_cards*100,"percent")
+
+#%%
+
+print("now just s+t>2")
+print("vs home")
+journeys_agg_card = journeys_agg_card[(journeys_agg_card['num_origin']!=1)|(journeys_agg_card['num_destination']!=1)]
+
+
+num_cards = len(journeys_agg_card['Cardid'].unique())
+print(num_cards,"cards in set")
+
+for p_explore in [10, 20, 30]:
+    print("for p=", p_explore)
+    journeys_agg_card_p = journeys_agg_card[journeys_agg_card['p']==p_explore]
+    journeys_agg_card_p = journeys_agg_card_p.groupby('Cardid').sum()
+    print(len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_home']>0]),"cards with reduced time,",
+          len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_home']>0])/num_cards*100,"percent")
+    print(journeys_agg_card_p['dist_assigned_home'][journeys_agg_card_p['dist_diff_home']>0].median(), "median travel time (home)")
+    print(journeys_agg_card_p['dist_assigned'][journeys_agg_card_p['dist_diff_home']>0].median(), "median travel time (mine)")
+    print(journeys_agg_card_p['dist_diff_home'][journeys_agg_card_p['dist_diff_home']>0].median(), "median time saved")    
+    
+    print(len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_home']<0]),"cards with increased time,", 
+          len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_home']<0])/num_cards*100,"percent")
+    print(journeys_agg_card_p['dist_assigned_home'][journeys_agg_card_p['dist_diff_home']<0].median(), "median travel time (home)")
+    print(journeys_agg_card_p['dist_assigned'][journeys_agg_card_p['dist_diff_home']<0].median(), "median travel time (mine)")
+    print(journeys_agg_card_p['dist_diff_home'][journeys_agg_card_p['dist_diff_home']<0].median(), "median time added")
+    
+    
+    print(len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_home']==0]),"cards with no change to time,",
+          len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_home']==0])/num_cards*100,"percent")
+
+print("\nvs trad")
+num_cards = len(journeys_agg_card['Cardid'].unique())
+print(num_cards,"cards in set")
+
+for p_explore in [10, 20, 30]:
+    print("for p=", p_explore)
+    journeys_agg_card_p = journeys_agg_card[journeys_agg_card['p']==p_explore]
+    journeys_agg_card_p = journeys_agg_card_p.groupby('Cardid').sum()
+    print(len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_trad']>0]),"cards with reduced time,",
+          len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_trad']>0])/num_cards*100,"percent")
+    print(journeys_agg_card_p['dist_assigned_trad'][journeys_agg_card_p['dist_diff_trad']>0].median(), "median travel time (trad)")
+    print(journeys_agg_card_p['dist_assigned'][journeys_agg_card_p['dist_diff_trad']>0].median(), "median travel time (mine)")
+    print(journeys_agg_card_p['dist_diff_trad'][journeys_agg_card_p['dist_diff_trad']>0].median(), "median time saved")    
+    
+    print(len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_trad']<0]),"cards with increased time,", 
+          len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_trad']<0])/num_cards*100,"percent")
+    print(journeys_agg_card_p['dist_assigned_trad'][journeys_agg_card_p['dist_diff_trad']<0].median(), "median travel time (trad)")
+    print(journeys_agg_card_p['dist_assigned'][journeys_agg_card_p['dist_diff_trad']<0].median(), "median travel time (mine)")
+    print(journeys_agg_card_p['dist_diff_trad'][journeys_agg_card_p['dist_diff_trad']<0].median(), "median time added")    
+    
+    print(len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_trad']==0]),"cards with no change to time,",
+          len(journeys_agg_card_p[journeys_agg_card_p['dist_diff_trad']==0])/num_cards*100,"percent")
+
+#%%
+combined_agg_dist['num_total'] = combined_agg_dist['num_origin']+combined_agg_dist['num_destination']
+combined_agg_dist[combined_agg_dist['p']==20]['num_total'].value_counts()
+# we only expect to see better results when num_total is greater than 2 
+# (i.e. there is more than one origin and destination)
+# we have more than one OD in 7.1% of the records in the jdlp polygon
 
 #%% SCATTER PLOT OF TRAVEL TIME VS REFERENCE ALGORITHM TRAVEL TIME
 
@@ -2748,7 +2862,9 @@ plot_summary['scaled_count'] = (plot_summary['count'] - original_min) / original
 plot_summary['p'] = plot_summary['p'].astype(str)
 fig = px.scatter(plot_summary, x="dist_reference", y="dist_assigned", color='p',
                  color_discrete_sequence=mycolors_discrete, size='scaled_count', size_max=new_max, 
-                 facet_col='algorithm', facet_row='p', render_mode='svg')
+                 facet_col='algorithm', facet_row='p', render_mode='svg',
+                 facet_col_spacing=0.05,  # Default is 0.02
+                 facet_row_spacing=0.08)
 fig.update_layout(default_layout)
 fig.update_traces(marker=dict(sizemin=new_min))
 
@@ -2796,14 +2912,14 @@ fig.add_annotation(
     xref='paper', 
     x=0.5, 
     yref='paper',
-    y=-.09,
+    y=-.11,
     text='Travel time with reference approach (minutes)'
 )
 fig.add_annotation(
     showarrow=False,
     xanchor='center',
     xref='paper', 
-    x=-0.06, # this works best at -0.04 for html export, -0.06 otherwise
+    x=-0.05, 
     yanchor='middle',
     yref='paper',
     y=0.5,
@@ -2812,12 +2928,30 @@ fig.add_annotation(
 )
 
 fig.update_layout(font=dict(size=18))
-#pyo.plot(fig, config=config)
+pyo.plot(fig, config=config)
 
-filename = "pmed_scatter"+filename_suffix
+filename = "pmed_scatter_"+filename_suffix
+
+fig.layout.annotations[6]['x'] = -0.03 
+fig.layout.annotations[5]['y'] = -0.07  
+fig.update_layout(default_layout_html)
 fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+
+fig.update_layout(default_layout)
+fig.layout.annotations[6]['x'] = -0.04 
+fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=default_width*300, height=default_height*300, scale=1)
+
+fig.update_layout(default_layout_blank)
+fig.layout.shapes = [] 
+fig.for_each_annotation(lambda a: a.update(text=""))
+fig.update_xaxes(title_text="", showticklabels=False)
+fig.update_yaxes(title_text="", showticklabels=False)
+fig.update_xaxes(visible=False)
+fig.update_yaxes(visible=False)
+fig.update_traces(visible=False, selector=dict(name="YourTraceName"))
+fig.write_image(dirname+"figs\\blank\\"+filename+".svg", width=default_width*300, height=default_height*300, scale=1)
+fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=2*300, height=2*300, scale=1)
+
 
 
 #%% SCATTER PLOT OF TIME SAVED  VS REFERENCE ALGORITHM TRAVEL TIME
@@ -2922,8 +3056,10 @@ outbox = pd.melt(
 fig = px.strip(outbox, color ='p', y='value',x='variable', 
              color_discrete_sequence=mycolors_discrete, 
              labels={"value": "Travel time saved (minutes)", "variable": ""})# y="total_bill")
+ymin = -60
+ymax = 120
 fig.update_yaxes(
-    range=(-70, 130),
+    range=(ymin, ymax),
     constrain='domain'
 )
 strip_layout = dict(yaxis=dict(
@@ -2960,16 +3096,20 @@ strip_layout = dict(yaxis=dict(
     )
 )
 fig.update_layout(strip_layout)
+
+fig.update_layout(
+    yaxis=dict(
+        tickmode='linear',
+        dtick=20      # Interval step size
+    )
+)
 fig.add_shape(
     type="line", xref='x', yref='y',
-                    y0=-10, x0=0.5, y1=80, x1=0.5, line_color=line_colour, line_width=line_width)
+                    y0=ymin, x0=0.5, y1=ymax, x1=0.5, line_color=line_colour, line_width=line_width)
 
 pyo.plot(fig, config=config)
 
-filename = "pmed_stripplot"+filename_suffix
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg",width=700, height=400)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+export_plot("pmed_stripplot_"+filename_suffix, plot_width, default_height)
 
 #%% COMPARING TO CURRENT TRAVEL TIME (THE TRANSPORT RESULTS)
 
@@ -3031,10 +3171,8 @@ for p_explore in [10, 20, 30]:
     fig.update_xaxes(range=[0, 100])
 
     #pyo.plot(fig, config=config)
-    filename = "pmed_timesaved_dist_"+filename_suffix+str(p_explore)
-    fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-    fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-    fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+    
+    export_plot("pmed_timesaved_dist_"+filename_suffix+str(p_explore), plot_width, default_height)
 
     assigned_facilities_all = pd.concat([assigned_facilities_all, assigned_facilities]) 
     df_nodes_output_all = pd.concat([df_nodes_output_all, df_nodes_output]) 
@@ -3130,12 +3268,6 @@ fig.add_annotation(
 fig.update_layout(font=dict(size=18))
 #pyo.plot(fig, config=config)
 
-filename = "pmed_scatter_transport"+filename_suffix
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
-
-
 #%% SCATTER PLOT OF TIME SAVED VS CURRENT TRAVEL TIME
 
 grouped = journeys_agg_card[['p','time_saved','current_dist_total','Cardid']].groupby(['p','current_dist_total','time_saved']).count()
@@ -3193,7 +3325,7 @@ fig.add_annotation(
     xref='paper', 
     x=0.5, 
     yref='paper',
-    y=-.09,
+    y=-.11,
     text='Current travel time (minutes)'
 )
 fig.add_annotation(
@@ -3209,7 +3341,30 @@ fig.add_annotation(
 )
 
 fig.update_layout(font=dict(size=18))
-pyo.plot(fig, config=config)
+#pyo.plot(fig, config=config)
+
+filename = "pmed_scatter_transport_"+filename_suffix
+
+fig.layout.annotations[4]['x'] = -0.03 
+fig.layout.annotations[3]['y'] = -0.07 
+fig.update_layout(default_layout_html)
+fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
+
+#%%
+fig.update_layout(default_layout)
+fig.layout.annotations[4]['x'] = -0.06 
+fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=plot_width*300, height=default_height*300, scale=1)
+
+fig.update_layout(default_layout_blank)
+fig.layout.shapes = [] 
+fig.for_each_annotation(lambda a: a.update(text=""))
+fig.update_xaxes(title_text="", showticklabels=False)
+fig.update_yaxes(title_text="", showticklabels=False)
+fig.update_xaxes(visible=False)
+fig.update_yaxes(visible=False)
+fig.update_traces(visible=False, selector=dict(name="y=x line"))
+fig.write_image(dirname+"figs\\blank\\"+filename+".svg", width=plot_width*300, height=default_height*300, scale=1)
+fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=2*300, height=2*300, scale=1)
 
 #%% STRIP PLOT - TRANSPORT RESULTS
 
@@ -3227,7 +3382,7 @@ fig = px.strip(outbox, color ='p', y='value',x='variable',
              color_discrete_sequence=mycolors_discrete, 
              labels={"value": "Travel time saved (minutes)", "variable": ""})# y="total_bill")
 fig.update_yaxes(
-    range=(-10, 150),
+    range=(-20, 160),
     constrain='domain'
 )
 strip_layout = dict(yaxis=dict(
@@ -3267,10 +3422,7 @@ fig.update_layout(strip_layout)
 
 pyo.plot(fig, config=config)
 
-filename = "pmed_stripplot_transport"
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg",width=700, height=400)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+export_plot("pmed_stripplot_transport", plot_width, default_height)
 
 
 #%% PLOT ALLOCATED FACILITIES
@@ -3299,15 +3451,12 @@ fig = px.scatter_map(
     zoom=10,
 )
 
-fig.update_layout(default_layout)
+fig.update_layout(default_layout, margin=dict(l=0, r=0, t=0, b=0, pad=0))
 fig.update_traces(marker=dict(sizemin=2))
 fig.update_layout(map_style="light")
 pyo.plot(fig, config=config)
 
-filename = "pmed_jdlp_allocated_map_"+filename_suffix+str(p_explore)
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
+export_map("pmed_allocated_map_"+filename_suffix+str(p_explore), default_width, default_height)
 
 
 #%% PLOT ALL FACILITIES (OPEN, CLOSED, EXISTING)
@@ -3332,8 +3481,6 @@ fig.update_layout(map_style="light")
 fig.update_traces(marker=dict(size=10))
 pyo.plot(fig, config=config)
 
-# filename = "pmed_jdlp_count"
-# fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
 
 #%% PLOT MAP COLOURED BY TIME SAVED
 # points on a map coloured by how much total time they save if used
@@ -3375,7 +3522,7 @@ fig = px.scatter_map(
     zoom=10,
 )
 fig.update_traces(marker_opacity=1) 
-fig.update_layout(default_layout)
+fig.update_layout(default_layout, margin=dict(l=0, r=0, t=0, b=0, pad=0))
 fig.update_traces(marker=dict(sizemin=3))
 fig.update_layout(map_style="light")
 pyo.plot(fig, config=config)
@@ -3410,6 +3557,10 @@ assigned_facilities = pd.merge(assigned_facilities, df_nodes_output[['clusterID'
 
 assigned_facilities['median saved'] = assigned_facilities['median saved'].astype(float)
 
+map_center = {"lat": -31.82088, "lon": 115.7964} 
+zoom_main = 11
+
+
 fig = px.scatter_map(
     assigned_facilities,
     lat=assigned_facilities["Y"],
@@ -3420,19 +3571,15 @@ fig = px.scatter_map(
     size_max=15,
     hover_data=['clusterID'],
     center=map_center,
-    zoom=10,
+    zoom=zoom_main,
 )
 fig.update_traces(marker_opacity=1) 
-fig.update_layout(default_layout)
+fig.update_layout(coloraxis_showscale=False)
+fig.update_layout(default_layout, margin=dict(l=0, r=0, t=0, b=0, pad=0))
 fig.update_traces(marker=dict(sizemin=3))
 fig.update_layout(map_style="light")
-pyo.plot(fig, config=config)
+#pyo.plot(fig, config=config)
 
-filename = "pmed_jdlp_mediansaved_map_"+filename_suffix+str(p_explore)
-fig.write_html(dirname+"figs\\html\\"+filename+".html", include_plotlyjs='cdn', config=config)
-fig.write_image(dirname+"figs\\svg\\"+filename+".svg", width=700, height=350)
-fig.write_image(dirname+"figs\\square\\"+filename+".svg", width=600,height=600)
-
-
+export_map("pmed_mediansaved_map_"+filename_suffix+str(p_explore), 1.5, default_height)
 
 
